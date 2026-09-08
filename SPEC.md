@@ -171,6 +171,7 @@ main（REPL + 状态机拦截） → cmd（命令处理/输出） → fs（树�
 | `close_file` 但从未 open | AI 版：输出 `ERROR: invalid operation`（修 NULL 崩溃，Issue #4 决策） |
 | 未知命令（未打开状态） | AI 版：静默忽略（Issue #4 决策，维持现状） |
 | `rename` old == new | AI 版：报 `already exists`（Issue #4 决策，维持现状） |
+| 内存泄漏 / 越界 | AI 版：CI 双版本 ASan（Linux detect_leaks=1）持续检测（Issue #5 决策） |
 
 ---
 

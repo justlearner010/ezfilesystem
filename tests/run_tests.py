@@ -13,11 +13,17 @@
 退出码：全过 0，有失败 1（供 CI 使用）
 """
 import os
+import platform
 import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TARGET = sys.argv[1] if len(sys.argv) > 1 else "human_version"
+
+ASAN = "--asan" in sys.argv
+ARGS = [a for a in sys.argv[1:] if a != "--asan"]
+TARGET = ARGS[0] if ARGS else "human_version"
+if ASAN:
+    print(f"== 目标: {TARGET}（--asan 模式：检测越界与内存泄漏）==")
 EZFS_DIR = os.path.join(ROOT, TARGET)
 EZFS = os.path.join(EZFS_DIR, "ezfs")
 
@@ -30,7 +36,13 @@ if TARGET == "AI_version":
 
 
 def build() -> bool:
-    r = subprocess.run(["make", "-C", EZFS_DIR], capture_output=True, text=True)
+    if ASAN:
+        srcs = [os.path.join(EZFS_DIR, f) for f in sorted(os.listdir(EZFS_DIR)) if f.endswith(".c")]
+        cmd = (["gcc", "-Wall", "-Wextra", "-std=c11", "-fsanitize=address", "-g",
+                "-I", EZFS_DIR, "-o", EZFS] + srcs)
+    else:
+        cmd = ["make", "-C", EZFS_DIR]
+    r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         print("编译失败：", file=sys.stderr)
         print(r.stdout + r.stderr, file=sys.stderr)
@@ -55,6 +67,10 @@ def normalize(out: str) -> list:
 def main() -> int:
     if not build():
         return 1
+    asan_opts = "halt_on_error=1"
+    if platform.system() == "Linux":
+        asan_opts += ":detect_leaks=1"      # LeakSanitizer 仅 Linux 支持（CI 上做泄漏检测）
+
     passed = failed = 0
     for case_dir in CASE_DIRS:
       for name in sorted(os.listdir(case_dir)):
@@ -65,8 +81,9 @@ def main() -> int:
         if not os.path.exists(exp_path):
             continue
         with open(os.path.join(case_dir, name)) as f:
+            env = dict(os.environ, ASAN_OPTIONS=asan_opts) if ASAN else None
             r = subprocess.run([EZFS], cwd=EZFS_DIR, stdin=f,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, env=env)
         got = normalize(r.stdout)
         exp = normalize(open(exp_path).read())
         if got == exp:

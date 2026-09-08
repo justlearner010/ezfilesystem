@@ -27,6 +27,18 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — AI-05 健壮性增强（Issue #5）：ASan 进 CI + 深度路径/泄漏用例 + 性能冒烟
+
+**做了什么：**
+1. run_tests.py 新增 `--asan` 模式：gcc -fsanitize=address 编译 + ASAN_OPTIONS（Linux 下 detect_leaks=1，macOS 仅越界检测——LeakSanitizer 平台不支持）。
+2. CI 扩为 4 步：human/AI 常规 + 双版本 ASan（Linux 上自动做泄漏检测）。
+3. 新增 2 用例：deep_path（50 层目录：create/cd/find 深层路径/ll_pre 完整路径 104 行）、leak_check（创建文件/目录/写入 → 全删，配 ASan 验证无泄漏）。
+4. tests/perf_smoke.py：手动性能冒烟（5000 文件创建 + find + ll + 全删，实测 6.9 万条/秒）。
+5. SPEC §6 决策 +1 行。
+
+**待确认 / 下一步：**
+- 五个 Issue 全部完成。可选：代码规范化整理、实验报告素材、git 标签打版。
+
 ### 2026-09-08 — AI-04 补齐未定义行为（Issue #4，用户确认全部现状/推荐方案）
 
 **做了什么：**
@@ -37,6 +49,11 @@ ezfilesystem/
 
 **待确认 / 下一步：**
 - Issue #5 健壮性增强（边界与对抗场景全面加固，候选清单待用户确认）。
+
+### 2026-09-08 — AI-05 健壮性
+
+1. **平台差异坑（macOS vs Linux）**：AddressSanitizer 的 LeakSanitizer 在 macOS 上不支持（一启动就报错退出），Linux 才可用。本地 macOS 只做越界检测，泄漏检测交 CI。跨平台工具要区分环境。
+2. **期望文件生成要按真实遍历顺序**：deep_path 的 ll_pre 期望先写"所有 Dir 再 File"是错的——第 50 层目录 d49 在 d48 的文件之后输出（walk_pre 先文件后子目录）。推导期望时要精确模拟递归顺序，测试失败后对照实际输出校准。
 
 ### 2026-09-08 — AI-04 未定义行为
 

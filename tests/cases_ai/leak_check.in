@@ -1,0 +1,11 @@
+create_dir d
+create_file d_f.txt
+cd d
+create_file inner.txt
+open inner.txt
+write_file "some content"
+close_file
+cd ..
+delete_dir d
+delete_file d_f.txt
+ls

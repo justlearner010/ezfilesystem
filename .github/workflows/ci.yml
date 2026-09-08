@@ -10,7 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Build & test human_version
+      - name: Test human_version
         run: python3 tests/run_tests.py human_version
-      - name: Build & test AI_version
+      - name: Test AI_version
         run: python3 tests/run_tests.py AI_version
+      - name: ASan human_version (越界检测)
+        run: python3 tests/run_tests.py --asan human_version
+      - name: ASan AI_version (越界 + 泄漏检测)
+        run: python3 tests/run_tests.py --asan AI_version

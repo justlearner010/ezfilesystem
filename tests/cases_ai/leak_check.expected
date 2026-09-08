@@ -1,0 +1,8 @@
+SUCCESS: created directory d
+SUCCESS: created file d_f.txt
+SUCCESS: created file inner.txt
+SUCCESS: opened inner.txt
+SUCCESS: successfully written
+SUCCESS: closed inner.txt
+SUCCESS: d deleted
+SUCCESS: d_f.txt deleted

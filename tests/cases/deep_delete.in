@@ -1,0 +1,13 @@
+create_dir a
+cd a
+create_dir b
+cd b
+create_dir c
+cd c
+create_file deep.txt
+cd ..
+cd ..
+cd ..
+delete_dir a
+ls
+find_file deep

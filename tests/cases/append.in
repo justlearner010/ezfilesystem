@@ -1,0 +1,7 @@
+create_file log.txt
+open log.txt
+write_file "abc "
+write_file "def"
+write_file "123"
+close_file
+read_file log.txt

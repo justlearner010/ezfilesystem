@@ -1,0 +1,9 @@
+create_dir dir1
+create_dir dir2
+create_file hello.txt
+create_file ahellob.txt
+cd dir1
+create_file world.txt
+cd ..
+find_file lo
+find_file nothere

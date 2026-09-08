@@ -1,0 +1,8 @@
+create_dir d1
+create_dir d2
+create_file f1
+cd d1
+create_file x
+cd ..
+ll_pre
+ll_post

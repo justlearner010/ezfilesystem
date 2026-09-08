@@ -1,0 +1,5 @@
+create_file one
+create_file two
+create_file three
+rename_file one renamed_old
+ls

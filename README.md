@@ -26,6 +26,21 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — 测试套件 + GitHub Actions CI：9 用例全绿，供 push 后过 CI
+
+**做了什么：**
+1. 新增 `tests/cases/`：9 组用例（输入 .in + 期望 .out）——
+   - sample（官方样例）；conflict（同名共存/查重只查同类）；deep_delete（多层递归删除）；
+   - state_machine（open 状态机拦截/未打开 write）；append（多次追加+引号空格）；
+   - find（模糊查找顺序+无结果）；cd_root（根目录 cd .. 忽略）；
+   - traversal（ll_pre/ll_post 顺序）；rename_order（重命名不改变创建顺序）。
+2. 新增 `tests/run_tests.py`：make 编译 → 逐用例喂输入 → 归一化输出（去 `>> ` 前缀/空行）→ 与期望逐行 diff；退出码 0/1 供 CI 用。
+3. 新增 `.github/workflows/ci.yml`：ubuntu-latest 上 checkout → `python3 tests/run_tests.py`。
+4. 本地验证：passed=9 failed=0。
+
+**待确认 / 下一步：**
+- push 到 GitHub 看 CI 是否过；随后开始 AI_version 升级讨论。
+
 ### 2026-09-08 — human_version 完成：main.c 主循环 + Makefile，官方样例逐行一致
 
 **做了什么：**
@@ -110,6 +125,11 @@ ezfilesystem/
 ## 踩坑记录（学习笔记）
 
 > 记录实现过程中踩过的坑与修法，避免重复犯错。每个 commit 涉及的坑同步追加到这里。
+
+### 2026-09-08 — 测试套件
+
+1. **期望文件要覆盖程序全生命周期**：写 `.out` 时漏了创建命令前面的 SUCCESS 行，只写了 find/traversal 目标段——期望文件必须包含从启动到结束的**完整**输出序列（含所有中间 SUCCESS），否则 diff 第 0 行就错位。
+2. **归一化要去掉连续提示符**：cd 无输出时可能出现 `>> >> SUCCESS...`，处理 `>> ` 前缀要循环剥除；EOF 前会多一个空 `>> `，要过滤空行。
 
 ### 2026-09-08 — cmd 模块
 

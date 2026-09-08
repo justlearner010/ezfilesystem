@@ -1,0 +1,17 @@
+create_dir testDir
+create_file testFile.txt
+create_file testFile2.txt
+cd testDir
+create_file testFile3.txt
+create_file testFile4.txt
+cd ..
+open testFile.txt
+write_file "This is a test."
+close_file
+read_file testFile.txt
+rename_file testFile.txt newtestFile.txt
+rename_file newtestFile.txt testFile2.txt
+find_file test
+ls
+delete_file newtestFile.txt
+ll_pre

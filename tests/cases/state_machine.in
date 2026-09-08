@@ -1,0 +1,11 @@
+create_file f.txt
+open f.txt
+ls
+cd a
+create_file zz
+read_file f.txt
+find_file f
+close_file
+ls
+write_file "test"
+read_file f.txt

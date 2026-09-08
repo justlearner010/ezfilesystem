@@ -1,0 +1,5 @@
+cd ..
+cd ..
+create_file root.txt
+cd ..
+ls

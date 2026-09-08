@@ -1,0 +1,9 @@
+create_file a.txt
+create_file a.txt
+create_dir a.txt
+create_dir a.txt
+create_file a.txt
+ls
+rename_file a.txt b.txt
+rename_dir a.txt b.txt
+ls

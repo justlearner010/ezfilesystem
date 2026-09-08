@@ -1,0 +1,11 @@
+SUCCESS: created file f.txt
+SUCCESS: opened f.txt
+ERROR: invalid operation
+ERROR: invalid operation
+ERROR: invalid operation
+ERROR: invalid operation
+ERROR: invalid operation
+SUCCESS: closed f.txt
+File f.txt
+ERROR: invalid operation
+CONTENT: 

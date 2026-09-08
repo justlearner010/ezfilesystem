@@ -1,0 +1,12 @@
+SUCCESS: created directory d1
+SUCCESS: created directory d2
+SUCCESS: created file f1
+SUCCESS: created file x
+File f1
+Dir  d2
+Dir  d1
+File d1/x
+File f1
+Dir  d2
+File d1/x
+Dir  d1

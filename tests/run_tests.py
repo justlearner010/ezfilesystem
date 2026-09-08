@@ -8,7 +8,7 @@
 1. make 编译 human_version（要求 gcc + make）
 2. 遍历 tests/cases/*.in，喂给 ./ezfs
 3. 归一化程序输出（去 ">> " 提示符前缀、去空行/尾随提示符），
-   与同名 .out 期望文件逐行对比
+   与同名 .expected 期望文件逐行对比
 退出码：全过 0，有失败 1（供 CI 使用）
 """
 import os
@@ -52,7 +52,7 @@ def main() -> int:
         if not name.endswith(".in"):
             continue
         base = name[:-3]
-        exp_path = os.path.join(CASES_DIR, base + ".out")
+        exp_path = os.path.join(CASES_DIR, base + ".expected")
         if not os.path.exists(exp_path):
             continue
         with open(os.path.join(CASES_DIR, name)) as f:

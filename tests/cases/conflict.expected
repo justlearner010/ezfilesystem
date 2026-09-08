@@ -1,0 +1,11 @@
+SUCCESS: created file a.txt
+ERROR: file a.txt already exists
+SUCCESS: created directory a.txt
+ERROR: directory a.txt already exists
+ERROR: file a.txt already exists
+File a.txt
+Dir  a.txt
+SUCCESS: renamed file a.txt b.txt
+SUCCESS: renamed dir a.txt b.txt
+File b.txt
+Dir  b.txt

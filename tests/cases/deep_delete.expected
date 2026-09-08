@@ -1,0 +1,6 @@
+SUCCESS: created directory a
+SUCCESS: created directory b
+SUCCESS: created directory c
+SUCCESS: created file deep.txt
+SUCCESS: a deleted
+ERROR: deep not found

@@ -1,0 +1,24 @@
+SUCCESS: created directory testDir
+SUCCESS: created file testFile.txt
+SUCCESS: created file testFile2.txt
+SUCCESS: created file testFile3.txt
+SUCCESS: created file testFile4.txt
+SUCCESS: opened testFile.txt
+SUCCESS: successfully written
+SUCCESS: closed testFile.txt
+CONTENT: This is a test.
+SUCCESS: renamed file testFile.txt newtestFile.txt
+ERROR: file testFile2.txt already exists
+SEARCH RESULTS:
+testFile2.txt
+newtestFile.txt
+testDir/testFile4.txt
+testDir/testFile3.txt
+File testFile2.txt
+File newtestFile.txt
+Dir  testDir
+SUCCESS: newtestFile.txt deleted
+File testFile2.txt
+Dir  testDir
+File testDir/testFile4.txt
+File testDir/testFile3.txt

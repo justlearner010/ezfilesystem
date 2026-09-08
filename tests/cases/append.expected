@@ -1,0 +1,7 @@
+SUCCESS: created file log.txt
+SUCCESS: opened log.txt
+SUCCESS: successfully written
+SUCCESS: successfully written
+SUCCESS: successfully written
+SUCCESS: closed log.txt
+CONTENT: abc def123

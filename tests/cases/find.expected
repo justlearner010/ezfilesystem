@@ -1,0 +1,9 @@
+SUCCESS: created directory dir1
+SUCCESS: created directory dir2
+SUCCESS: created file hello.txt
+SUCCESS: created file ahellob.txt
+SUCCESS: created file world.txt
+SEARCH RESULTS:
+ahellob.txt
+hello.txt
+ERROR: nothere not found

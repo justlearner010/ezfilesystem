@@ -1,0 +1,41 @@
+>> create_dir testDir
+SUCCESS: created directory testDir
+>> create_file testFile.txt
+SUCCESS: created file testFile.txt
+>> create_file testFile2.txt
+SUCCESS: created file testFile2.txt
+>> cd testDir
+>> create_file testFile3.txt
+SUCCESS: created file testFile3.txt
+>> create_file testFile4.txt
+SUCCESS: created file testFile4.txt
+>> cd ..
+>> open testFile.txt
+SUCCESS: opened testFile.txt
+>> write_file "This is a test."
+SUCCESS: successfully written
+>> close_file
+SUCCESS: closed testFile.txt
+>> read_file testFile.txt
+CONTENT: This is a test.
+>> rename_file testFile.txt newtestFile.txt
+SUCCESS: renamed file testFile.txt newtestFile.txt
+>> rename_file newtestFile.txt testFile2.txt
+ERROR: file testFile2.txt already exists
+>> find_file test
+SEARCH RESULTS:
+testFile2.txt
+newtestFile.txt
+testDir/testFile4.txt
+testDir/testFile3.txt
+>> ls
+File testFile2.txt
+File newtestFile.txt
+Dir  testDir
+>> delete_file newtestFile.txt
+SUCCESS: newtestFile.txt deleted
+>> ll_pre
+File testFile2.txt
+Dir  testDir
+File testDir/testFile4.txt
+File testDir/testFile3.txt

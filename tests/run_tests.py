@@ -72,6 +72,9 @@ def main() -> int:
                 print(f"  第{i}行  实际: {a!r}  期望: {b!r}")
         failed += 1
     print(f"----\npassed={passed} failed={failed}")
+    if passed + failed == 0:
+        print("警告：一个用例都没跑（期望文件缺失？），按失败处理", file=sys.stderr)
+        return 1
     return 0 if failed == 0 else 1
 
 

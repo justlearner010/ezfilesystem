@@ -27,9 +27,18 @@ ezfilesystem/
 
 ## Commit 记录
 
-### 2026-09-08 — 测试架构（AI 专属用例分区）
+### 2026-09-08 — AI-03 输入安全四项落地：getline 动态读取 + 缺参/引号校验（Issue #3）
 
-1. **AI 专属能力不能进公共用例集**：name_too_long/big_write 放入公共 cases/ 后 human_version 回归 2 个 FAIL（human 版本就无这些能力）。修法：AI 专属用例移入 tests/cases_ai/，run_tests.py 按 TARGET 决定是否加载——两版共享公共集，AI 版额外验收增强能力。
+**做了什么：**
+1. Q1（getline）：main 改用 POSIX getline 动态读取，超长输入行不再截断；EOF 前 free(line)。
+2. Q2（缺参）：need_args 表定义每条命令所需参数个数；缺必需参数统一输出 `ERROR: invalid operation`；未知命令返回 -1 保持静默（留给 Issue #4）。
+3. Q3（引号校验）：write_file 要求内容被成对英文引号包裹——无左引号/无右引号（残缺）均报 `ERROR: invalid operation`；引号解析放在 strtok 拆词前（strtok 会破坏 line）。
+4. Q4（多余参数）：忽略多余参数（如 `rename_dir a b extra` 正常执行）。
+5. 新增 3 个 AI 专属用例：missing_args（4 种缺参 + 多余参数忽略）、bad_quotes（无引号/残缺/缺参）、long_content（单行 2000 字符经 getline + 动态扩容完整写入）。
+6. SPEC §6 决策表 +4 行。
+
+**待确认 / 下一步：**
+- Issue #4 补齐未定义行为（未知命令策略等）。
 
 ### 2026-09-08 — AI-02 内存安全四项落地：动态扩容 / 名字拒绝 / 缓冲增强 / 深度实测
 
@@ -165,9 +174,19 @@ ezfilesystem/
 - `ll_post` 无官方样例，按标准后根遍历推导的输出顺序待 TA 确认；
 - `close_file` 未打开、未知命令等未定义行为的最终决策。
 
-## 踩坑记录（学习笔记）
+## 踩坑记录（学习笔记）## 踩坑记录（学习笔记）
 
-> 记录实现过程中踩过的坑与修法，避免重复犯错。每个 commit 涉及的坑同步追加到这里。
+### 2026-09-08 — AI-03 输入安全
+
+1. **strtok 会破坏输入行**：`strtok(line, " ")` 把分隔符替换成 '\0'，之后在 line 上找引号必然失败（strchr 到截断处就停）。修法：引号定位必须在拆词之前完成（先 `strchr` 后 `strtok`）。
+2. **getline 需要显式 POSIX 支持**：Linux/glibc 下要 `#define _POSIX_C_SOURCE 200809L`（放文件首部），否则 gcc 可能不暴露 getline 声明。
+3. **替代文本前缀陷阱**：README 编辑时锚点"### AI-02 内存安全"同时命中 Commit 记录标题与踩坑记录标题，导致小节误插到 Commit 区。修法：用带完整副标题的锚点 + 复核文件结构。
+
+
+
+### 2026-09-08 — 测试架构（AI 专属用例分区）
+
+1. **AI 专属能力不能进公共用例集**：name_too_long/big_write 放入公共 cases/ 后 human_version 回归 2 个 FAIL（human 版本就无这些能力）。修法：AI 专属用例移入 tests/cases_ai/，run_tests.py 按 TARGET 决定是否加载——两版共享公共集，AI 版额外验收增强能力。
 
 ### 2026-09-08 — 测试套件
 

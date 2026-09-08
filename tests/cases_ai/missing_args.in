@@ -1,0 +1,7 @@
+create_file
+create_dir
+open
+rename_file a
+create_dir aa
+rename_dir aa bb extra
+ls

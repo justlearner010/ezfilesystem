@@ -164,6 +164,10 @@ main（REPL + 状态机拦截） → cmd（命令处理/输出） → fs（树�
 | 内容超出 CONTENT_SIZE=1000 | AI 版：File.content 动态扩容，无上限（Issue #2 决策） |
 | 目录嵌套过深（递归删除栈风险） | AI 版：ASan 实测 800 层无栈溢出，暂不加限制（Issue #2 决策） |
 | 路径缓冲溢出 | AI 版：PATH_BUF_SIZE 256→1024 + snprintf 截断（Issue #2 决策） |
+| 超长输入行 | AI 版：main 用 getline 动态读取，不截断（Issue #3 决策） |
+| 缺参数命令 | AI 版：统一输出 `ERROR: invalid operation`（Issue #3 决策） |
+| write_file 引号缺失/残缺 | AI 版：输出 `ERROR: invalid operation`（Issue #3 决策） |
+| 多余参数 | AI 版：忽略多余参数（Issue #3 决策） |
 
 ---
 

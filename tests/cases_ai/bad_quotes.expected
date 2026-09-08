@@ -1,0 +1,8 @@
+SUCCESS: created file f
+SUCCESS: opened f
+ERROR: invalid operation
+SUCCESS: successfully written
+ERROR: invalid operation
+ERROR: invalid operation
+SUCCESS: closed f
+CONTENT: ok

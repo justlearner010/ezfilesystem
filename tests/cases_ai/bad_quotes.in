@@ -1,0 +1,8 @@
+create_file f
+open f
+write_file noquote
+write_file "ok"
+write_file "unclosed
+write_file
+close_file
+read_file f

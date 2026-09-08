@@ -26,6 +26,21 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — human_version：修复 fs.c 全部问题（链表维护/清初始化/路径拼接）并通过测试
+
+**做了什么：**
+1. 修复 fs.c 的 7 处问题（详见「踩坑记录」fs 模块）：
+   - `free(f;)` 语法错误；`snprintf(..., "...", ...)` 大小参数非法；
+   - `dir_add_child` 补上漏掉的头插步骤 `d->firstchild_dir = child;`；
+   - `dir_remove_child` / `file_remove` 补上摘链表逻辑（含头结点/中间节点），避免 dir_destroy 死循环与悬垂指针；
+   - `dir_new` 改 calloc 整体清零（parent/链头不再有垃圾值）；
+   - `walk_post` 目录路径重复拼接修复；strncpy 改 NAME_SIZE-1 + 手动补 '\0'。
+2. 重写 walk_pre / walk_post 路径语义：path 统一为「末尾带 / 的目录链（根层为空）」——修掉测试暴露的斜杠错误（`/testDirtestFile4.txt` → `testDir/testFile4.txt`）。
+3. 验证：gcc -Wall 零警告；临时测试程序（建目录树/遍历/rename 摘链重挂/递归删除）全部通过，路径与顺序符合 SPEC。
+
+**待确认 / 下一步：**
+- 写 cmd 层（命令处理/输出）与 main 循环，回放官方样例。
+
 ### 2026-09-08 — human_version：完成 hash 模块并通过测试
 
 **做了什么：**
@@ -66,6 +81,17 @@ ezfilesystem/
 ## 踩坑记录（学习笔记）
 
 > 记录实现过程中踩过的坑与修法，避免重复犯错。每个 commit 涉及的坑同步追加到这里。
+
+### 2026-09-08 — fs 模块
+
+1. **多余分号**：`free(f;)` 在括号内侧多了一个 `;`，语法错误（`expected ')'`）。多看括号匹配。
+2. **把教学占位符照抄进代码**：`snprintf(path + len, "...", ...)` 的 `"..."` 是示意用的占位，真实代码里 size 参数必须是数字（如 `PATH_BUF_SIZE - len`）。占位符是拿来理解思路的，不是拿来粘贴的。
+3. **头插只做了一半**：`dir_add_child` 写了 `child->nextbro_dir = d->firstchild_dir` 却漏了 `d->firstchild_dir = child`——指针更新必须成对。后果：目录链表永远不被更新。
+4. **只删哈希不摘链表**：`dir_remove_child` / `file_remove` 只调 `hash_delete`，链表节点还挂着 → `dir_destroy` 的 `while(firstchild_*)` 死循环 + free 后悬垂指针。增删必须链表 + 哈希同步维护（指导书反复强调的要点）。
+5. **malloc 不初始化就存指针**：`dir_new` 用 malloc 只清了哈希表，`parent`/`firstchild_dir`/`firstchild_file` 是垃圾值——空目录 `ls` 遍历直接野指针崩溃。修法：结构体整体 `calloc`。
+6. **递归返回后路径状态没想清楚**：`walk_post` 递归返回时 path 已含目录名（还原点在 len2），又拼了一次 `c->name` → 路径重复。修法：打印 path 自身。
+7. **硬编码 + 不补 '\0'（hash 坑重犯）**：`strncpy(d->name, name, 20)` 硬编码 20，且 name 恰好 20 字符时无结尾符。统一 `NAME_SIZE-1` + 手动补 `'\0'`。
+8. **路径斜杠语义**：最初 path 表示「无分隔目录链」，递归后用 `printf(path, name)` 出现 `/testDirtestFile4.txt`。重定义为「path 末尾带 '/'（根层为空）」，打印时直接拼接名字。
 
 ### 2026-09-08 — hash 模块
 

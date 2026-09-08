@@ -2,10 +2,11 @@
 """ezfilesystem 测试运行器
 
 用法（仓库根目录或任意位置）：
-    python3 tests/run_tests.py
+    python3 tests/run_tests.py [版本目录]
 
+版本目录：默认 human_version，可传 AI_version（支持两个版本共享同一套用例回归）。
 流程：
-1. make 编译 human_version（要求 gcc + make）
+1. make 编译目标版本（要求 gcc + make）
 2. 遍历 tests/cases/*.in，喂给 ./ezfs
 3. 归一化程序输出（去 ">> " 提示符前缀、去空行/尾随提示符），
    与同名 .expected 期望文件逐行对比
@@ -16,7 +17,8 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EZFS_DIR = os.path.join(ROOT, "human_version")
+TARGET = sys.argv[1] if len(sys.argv) > 1 else "human_version"
+EZFS_DIR = os.path.join(ROOT, TARGET)
 CASES_DIR = os.path.join(ROOT, "tests", "cases")
 EZFS = os.path.join(EZFS_DIR, "ezfs")
 
@@ -73,7 +75,7 @@ def main() -> int:
         failed += 1
     print(f"----\npassed={passed} failed={failed}")
     if passed + failed == 0:
-        print("警告：一个用例都没跑（期望文件缺失？），按失败处理", file=sys.stderr)
+        print(f"警告：一个用例都没跑（期望文件缺失？），按失败处理", file=sys.stderr)
         return 1
     return 0 if failed == 0 else 1
 

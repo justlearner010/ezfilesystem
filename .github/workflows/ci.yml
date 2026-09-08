@@ -10,5 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Build & run test suite
-        run: python3 tests/run_tests.py
+      - name: Build & test human_version
+        run: python3 tests/run_tests.py human_version
+      - name: Build & test AI_version
+        run: python3 tests/run_tests.py AI_version

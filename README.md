@@ -11,11 +11,12 @@ ezfilesystem/
 ├── 简单的文件系统-实验指导用书 .docx   老师原始文档（数据结构/算法参考）
 ├── SPEC.md                           精简版实现规格（★ 建议最先读，含结构图与细节标注）
 ├── DESIGN.md                         模块划分与函数接口设计（实现时的接口约定）
-├── AGENTS.md                         本仓库工作规范（Commit 规范 / README 维护 / 文档导航）
+├── AGENTS.md                         本仓库工作规范（Commit 规范 / README 维护 / 文档导航 / AI_version 开发模式）
 ├── README.md                         本文件
-├── tests/                            官方样例：输入回放 + 完整回显对照
-├── human_version/                    我自己实现的简化版（目标：跑通 SPEC，暂不含 KMP）
-└── AI_version/                       升级版（human 完成后，与 Pi 一起讨论完善点）
+├── tests/                            官方样例 + 9 组用例 + 测试运行器（run_tests.py [版本目录]）
+├── .github/workflows/ci.yml          CI：human_version 与 AI_version 双版本回归
+├── human_version/                    我自己实现的简化版（跑通 SPEC，strstr 替代 KMP，不查越界）
+└── AI_version/                       升级版（基线=human 副本；按 Issue #1-5 逐项增强，冻结 human）
 ```
 
 ## 开发流程约定
@@ -25,6 +26,18 @@ ezfilesystem/
 - human_version 先跑通，再一起讨论 AI_version 的升级点，升级项记录在 DESIGN.md §7。
 
 ## Commit 记录
+
+### 2026-09-08 — AI_version 基线建立：Issue 驱动模式启动（AGENTS.md + 双版本测试）
+
+**做了什么：**
+1. `AGENTS.md` 新增 §5「AI_version 开发模式」：Issue 驱动、代码只落 AI_version/、用户全程 review 不写码、Pi 写实现跑测试、细节必须先讨论。
+2. 创建 5 个 GitHub Issue（#1 KMP / #2 内存安全 / #3 输入安全 / #4 未定义行为 / #5 健壮性）。
+3. `AI_version/` 建立基线：从 human_version 复制全部源码（hash/fs/cmd/main + Makefile），之后只在此目录改进，human_version 冻结。
+4. `tests/run_tests.py` 支持 `[版本目录]` 参数（默认 human_version）；CI 改为两个版本都跑。
+5. 验证：run_tests.py 对 human_version 与 AI_version 均为 passed=9 failed=0。
+
+**待确认 / 下一步：**
+- Issue #1：KMP 替换 strstr（实现前与用户确认设计细节）。
 
 ### 2026-09-08 — 测试套件 + GitHub Actions CI：9 用例全绿，供 push 后过 CI
 

@@ -26,6 +26,17 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — human_version 完成：main.c 主循环 + Makefile，官方样例逐行一致
+
+**做了什么：**
+1. 新增 `main.c`：REPL 主循环——`>> ` 提示、fgets 读行去换行、strtok 拆词、open 状态机拦截（非 write/close 一律 invalid operation）、write_file 引号内容单独解析、15 条命令 if-else 分发、未知命令静默忽略。
+2. 新增 `Makefile`：`make` 一键编译（-Wall -g）、`make run` 回放官方样例、`make clean`。
+3. 新增 `tests/` 对照脚本思路：程序输出（去 `>> ` 前缀）与 `sample_transcript.txt`（去回显行）**24 行逐行完全一致**。
+4. **human_version 至此功能完整**：hash（链地址哈希表）+ fs（目录树/遍历/递归删除/rename）+ cmd（15 命令）+ main（主循环）四模块闭环。
+
+**待确认 / 下一步：**
+- AI_version 讨论：KMP 接入、内存安全（越界/泄漏）、未定义行为补齐（close_file 未打开、未知命令）、测试自动化。
+
 ### 2026-09-08 — human_version：cmd 层 15 条命令实现并修复，核心链路跑通
 
 **做了什么：**

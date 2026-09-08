@@ -27,6 +27,10 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — 测试架构（AI 专属用例分区）
+
+1. **AI 专属能力不能进公共用例集**：name_too_long/big_write 放入公共 cases/ 后 human_version 回归 2 个 FAIL（human 版本就无这些能力）。修法：AI 专属用例移入 tests/cases_ai/，run_tests.py 按 TARGET 决定是否加载——两版共享公共集，AI 版额外验收增强能力。
+
 ### 2026-09-08 — AI-02 内存安全四项落地：动态扩容 / 名字拒绝 / 缓冲增强 / 深度实测
 
 **做了什么：**

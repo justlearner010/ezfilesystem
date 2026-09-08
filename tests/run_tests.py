@@ -19,8 +19,14 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET = sys.argv[1] if len(sys.argv) > 1 else "human_version"
 EZFS_DIR = os.path.join(ROOT, TARGET)
-CASES_DIR = os.path.join(ROOT, "tests", "cases")
 EZFS = os.path.join(EZFS_DIR, "ezfs")
+
+# 用例目录：公共集两版都跑；AI 专属集仅 AI_version 跑（AI 增强能力的验收）
+CASE_DIRS = [os.path.join(ROOT, "tests", "cases")]
+if TARGET == "AI_version":
+    ai_dir = os.path.join(ROOT, "tests", "cases_ai")
+    if os.path.isdir(ai_dir):
+        CASE_DIRS.append(ai_dir)
 
 
 def build() -> bool:
@@ -50,14 +56,15 @@ def main() -> int:
     if not build():
         return 1
     passed = failed = 0
-    for name in sorted(os.listdir(CASES_DIR)):
+    for case_dir in CASE_DIRS:
+      for name in sorted(os.listdir(case_dir)):
         if not name.endswith(".in"):
             continue
         base = name[:-3]
-        exp_path = os.path.join(CASES_DIR, base + ".expected")
+        exp_path = os.path.join(case_dir, base + ".expected")
         if not os.path.exists(exp_path):
             continue
-        with open(os.path.join(CASES_DIR, name)) as f:
+        with open(os.path.join(case_dir, name)) as f:
             r = subprocess.run([EZFS], cwd=EZFS_DIR, stdin=f,
                                capture_output=True, text=True)
         got = normalize(r.stdout)

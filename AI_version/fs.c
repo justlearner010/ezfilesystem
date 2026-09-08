@@ -65,9 +65,12 @@ void dir_destroy(Directory *d){
         dir_remove_child(d, c);
         dir_destroy(c);
     }
-    /* 第3步：子节点清空后释放自己 */
+    /* 第3步：子节点清空后释放自己
+     * hash_destroy 只释放桶内链表节点；卷表本身也是 malloc 的，要 free 表 */
     hash_destroy(d->subdirs);
+    free(d->subdirs);
     hash_destroy(d->files);
+    free(d->files);
     free(d);
 }
 

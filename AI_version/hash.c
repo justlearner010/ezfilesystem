@@ -52,6 +52,7 @@ int hash_delete(HashTable *ht, const char *key){
     return 1;
 }
 
+/* 只释放桶内链表节点，不释放卷表本身（卷表由 dir_destroy 负责 free） */
 void hash_destroy(HashTable *ht){
     for (int i = 0;i < HASH_SIZE;i++){
         HashNode *p = ht->table[i];

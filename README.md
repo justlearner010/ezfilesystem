@@ -26,6 +26,17 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — human_version：完成 hash 模块并通过测试
+
+**做了什么：**
+1. 新增 `human_version/hash.h`：常量（HASH_SIZE / NAME_SIZE / CONTENT_SIZE）+ HashNode / HashTable 结构体 + 5 个函数声明，含 include 防护。
+2. 新增 `human_version/hash.c`：实现 `hash_key`（ΣASCII % 100）、`hash_insert`（链地址法头插）、`hash_find`、`hash_delete`（前驱指针摘链，支持头结点/中间节点）、`hash_destroy`（全桶释放）。
+3. 验证：`gcc -Wall -c` 零警告；临时测试程序插/查/删/销毁全部通过。
+4. 期间踩的 4 个坑已记入下方「踩坑记录」：数组不能赋值、结构体按值传参、复制粘贴残留参数、哈希表清零初始化。
+
+**待确认 / 下一步：**
+- 开始写 fs.h / fs.c（目录树 + 文件，核心模块）。
+
 ### 2026-09-08 — 新增 AGENTS.md：固化 Commit 规范与 README 维护规则
 
 **做了什么：**
@@ -51,3 +62,14 @@ ezfilesystem/
 **未解决 / 待确认：**
 - `ll_post` 无官方样例，按标准后根遍历推导的输出顺序待 TA 确认；
 - `close_file` 未打开、未知命令等未定义行为的最终决策。
+
+## 踩坑记录（学习笔记）
+
+> 记录实现过程中踩过的坑与修法，避免重复犯错。每个 commit 涉及的坑同步追加到这里。
+
+### 2026-09-08 — hash 模块
+
+1. **数组不能整体赋值**：`node->key = key;` 编译报错 `array type 'char[20]' is not assignable`。即使换个写法，`key` 也只是指针——存地址不存内容，调用方缓冲区一变就悬垂。修法：`strncpy(node->key, key, NAME_SIZE - 1)` + 手动补 `'\0'`。
+2. **结构体按值传参会丢修改**：`hash_destroy(HashTable ht)` 参数是值拷贝，函数里 `ht->table[i]` 编译报错；就算改成点号，改的也是副本。修法：改为传指针 `HashTable *ht`。
+3. **复制粘贴残留参数**：hash_find / hash_delete 从 insert 复制声明时多带了 `void *value` 参数。修法：声明与定义两处都删。
+4. **哈希表必须清零初始化**：`HashTable ht = {{0}};`——不初始化则桶内是野指针，find 直接崩。fs.c 新建目录时两张哈希表同样要清零。

@@ -85,5 +85,6 @@ int main(void) {
     }
 
     free(line);
+    dir_destroy(g_root);   /* AI：退出前释放整棵目录树，ASan 泄漏检测干净 */
     return 0;
 }

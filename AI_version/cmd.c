@@ -158,6 +158,10 @@ void cmd_open(const char *name) {
 }
 
 void cmd_close_file() {
+    if (!g_opend_file) {                        /* 从未 open：防 NULL 解引用崩溃 */
+        printf("ERROR: invalid operation\n");
+        return;
+    }
     printf("SUCCESS: closed %s\n",g_opend_file->name);
     g_is_open = 0;
     g_opend_file = NULL;

@@ -1,0 +1,9 @@
+ERROR: invalid operation
+SUCCESS: created file f
+ERROR: invalid operation
+SUCCESS: opened f
+SUCCESS: closed f
+SUCCESS: created file t
+ERROR: file t already exists
+File t
+File f

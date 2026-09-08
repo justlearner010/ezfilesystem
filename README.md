@@ -27,6 +27,21 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — AI-04 补齐未定义行为（Issue #4，用户确认全部现状/推荐方案）
+
+**做了什么：**
+1. 修复必崩点：`cmd_close_file` 在从未 open 时 g_opend_file==NULL，读 `g_opend_file->name` 直接崩溃（human 版同样存在）。AI 版改为输出 `ERROR: invalid operation`。
+2. 其余三项维持现状并记录决策：未知命令静默忽略；rename old==new 报 already exists；cd .. 根目录静默忽略（SPEC 已明确）。
+3. 新增 1 个 AI 专属用例 undefined_behaviors：close 未打开×2、正常 open/close、old==new、未知命令、根目录 cd ..、收尾 ll_post 验证状态正常。
+4. SPEC §6 决策表 +3 行。
+
+**待确认 / 下一步：**
+- Issue #5 健壮性增强（边界与对抗场景全面加固，候选清单待用户确认）。
+
+### 2026-09-08 — AI-04 未定义行为
+
+1. **状态机白名单 ≠ 输入校验**：main 的拦截只挡"已打开时的无关命令"；反过来"关闭状态下执行 close_file"会放行到 cmd_close_file——若从未 open，g_opend_file==NULL，`->name` 解引用直接段错误。凡函数内读写指针字段，先判 NULL。
+
 ### 2026-09-08 — AI-03 输入安全四项落地：getline 动态读取 + 缺参/引号校验（Issue #3）
 
 **做了什么：**

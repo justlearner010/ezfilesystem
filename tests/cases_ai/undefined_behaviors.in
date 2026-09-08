@@ -1,0 +1,10 @@
+close_file
+create_file f
+close_file
+open f
+close_file
+create_file t
+rename_file t t
+cd ..
+no_such_command abc
+ll_post

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define PATH_BUF_SIZE 256   /* 路径缓冲大小：NAME_SIZE=20，层级有限，256 足够 */
+/* PATH_BUF_SIZE 定义于 fs.h（AI：1024） */
 
 /* 全局状态定义（fs.h 中 extern 声明，此处定义才真正分配内存） */
 Directory *g_root      = NULL;
@@ -57,7 +57,7 @@ void dir_destroy(Directory *d){
     while (d->firstchild_file) {
         File *f = d->firstchild_file;
         file_remove(d, f);                    /* file_remove 已摘链，头指针会更新 */
-        free(f);
+        file_free(f);                         /* AI：连同动态 content 一起释放 */
     }
     /* 第2步：对每个子目录先摘链再递归销毁（避免悬垂） */
     while (d->firstchild_dir) {
@@ -80,11 +80,23 @@ void dir_rename(Directory *d, Directory *c, const char *newname) {
 
 /* ============ 文件操作 ============ */
 
+#define FILE_CONTENT_INIT 64   /* content 初始容量 */
+
 File *file_new(const char *name){
-    File *f = calloc(1, sizeof(File));   /* content 清零 = 新文件内容为空 */
+    File *f = calloc(1, sizeof(File));
     strncpy(f->name, name, NAME_SIZE - 1);
     f->name[NAME_SIZE - 1] = '\0';
+    f->content_cap = FILE_CONTENT_INIT;
+    f->content = calloc(1, f->content_cap);   /* 初始 64 字节，含 '\0' */
+    f->content_len = 0;
     return f;
+}
+
+/* AI 增强：释放文件动态 content 与节点本体（替代直接 free） */
+void file_free(File *f) {
+    if (!f) return;
+    free(f->content);
+    free(f);
 }
 
 File *file_find(Directory *d, const char *name){
@@ -159,7 +171,7 @@ void file_rename(Directory *d, File *f, const char *newname) {
     }
     for (Directory *c = cur->firstchild_dir; c; c = c->nextbro_dir) {
         int len2 = len + strlen(c->name) + 1;
-        snprintf(path + len, 256 - len, "%s/", c->name);
+        snprintf(path + len, PATH_BUF_SIZE - len, "%s/", c->name);
         find_walk(c, path, len2, kw, found, print);
         path[len] = '\0';                         /* 还原 */
     }

@@ -160,6 +160,10 @@ main（REPL + 状态机拦截） → cmd（命令处理/输出） → fs（树�
 | `close_file` 但未打开 | `ERROR: invalid operation` |
 | 文件名超 `NAME_SIZE=20` / 内容超 `CONTENT_SIZE=1000` | 题目保证合法输入，暂不处理（AI 版处理截断） |
 | `read_file` 未打开的越权问题 | 允许（规格只禁了写入） |
+| 名字超长（≥ NAME_SIZE=20）| AI 版：拒绝创建/重命名，输出 `ERROR: name too long`（Issue #2 决策） |
+| 内容超出 CONTENT_SIZE=1000 | AI 版：File.content 动态扩容，无上限（Issue #2 决策） |
+| 目录嵌套过深（递归删除栈风险） | AI 版：ASan 实测 800 层无栈溢出，暂不加限制（Issue #2 决策） |
+| 路径缓冲溢出 | AI 版：PATH_BUF_SIZE 256→1024 + snprintf 截断（Issue #2 决策） |
 
 ---
 

@@ -27,6 +27,19 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — AI-02 内存安全四项落地：动态扩容 / 名字拒绝 / 缓冲增强 / 深度实测
+
+**做了什么：**
+1. Q1（超长名字拒绝）：cmd 层 create_file/create_dir/rename_file/rename_dir 统一 `name_too_long` 检查（strlen ≥ NAME_SIZE），输出 `ERROR: name too long`。
+2. Q2（内容动态扩容）：File.content 从固定数组改为动态分配（初始 64、倍增扩容）；新增 `file_free` 释放 content 与节点；cmd_write_file 改为 memcpy 安全追加（OOM 时输出 ERROR 且不破坏原内容）。
+3. Q4（路径缓冲）：PATH_BUF_SIZE 移入 fs.h 并 256→1024，find_walk/ll_*/find_file 统一使用。
+4. Q3（深度实测）：ASan 跑 800 层嵌套 create_dir + cd .. 后 delete_dir，无栈溢出、无内存错误，暂不加层数限制。
+5. 新增 2 用例：name_too_long（超长拒绝 4 场景）、big_write（8×150=1200 字符动态扩容验证）。
+6. SPEC §6 未定义行为决策表新增 4 行（对应 Q1-Q4 决策）。
+
+**待确认 / 下一步：**
+- Issue #3 输入安全（无参数命令、超长行、引号残缺、未知命令决策）。
+
 ### 2026-09-08 — AI-01 KMP：独立 kmp 模块替换 strstr（nextval 优化），20 万随机用例验证一致
 
 **做了什么：**
@@ -157,6 +170,12 @@ ezfilesystem/
 1. **期望文件要覆盖程序全生命周期**：写 `.out` 时漏了创建命令前面的 SUCCESS 行，只写了 find/traversal 目标段——期望文件必须包含从启动到结束的**完整**输出序列（含所有中间 SUCCESS），否则 diff 第 0 行就错位。
 2. **归一化要去掉连续提示符**：cd 无输出时可能出现 `>> >> SUCCESS...`，处理 `>> ` 前缀要循环剥除；EOF 前会多一个空 `>> `，要过滤空行。
 3. **.gitignore 会吞掉期望文件**：`*.out` 同时匹配编译产物与测试期望文件，导致期望文件没被 `git add` 提交（CI 会全挂）。修法：期望文件改用 `.expected` 后缀，与编译产物 `.out` 区分。
+
+### 2026-09-08 — AI-02 内存安全
+
+1. **结构体字段动态化后释放要跟上**：File.content 改动态分配后，所有 `free(f)` 的地方必须先 `free(f->content)`（cmd_delete_file、dir_destroy）——否则泄漏。封装 `file_free` 统一收口。
+2. **字符串替换锚点会被行尾空格坑**：cmd_create_dir 的代码有空混合缩进（行尾多余空格），精确 replace 匹配失败。修法：正则 `\s*` 宽容匹配。给机器改代码要留意肉眼不可见字符。
+3. **旧上限测试用例要重新设计**：write 内容单行超过旧 CONTENT_SIZE 无法从命令行构造（main 的 line=256 会截断），改多段写入累积超上限来验证扩容。
 
 ### 2026-09-08 — AI-01 KMP 模块
 

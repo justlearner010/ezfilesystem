@@ -11,6 +11,7 @@ ezfilesystem/
 ├── 简单的文件系统-实验指导用书 .docx   老师原始文档（数据结构/算法参考）
 ├── SPEC.md                           精简版实现规格（★ 建议最先读，含结构图与细节标注）
 ├── DESIGN.md                         模块划分与函数接口设计（实现时的接口约定）
+├── AGENTS.md                         本仓库工作规范（Commit 规范 / README 维护 / 文档导航）
 ├── README.md                         本文件
 ├── tests/                            官方样例：输入回放 + 完整回显对照
 ├── human_version/                    我自己实现的简化版（目标：跑通 SPEC，暂不含 KMP）
@@ -20,9 +21,20 @@ ezfilesystem/
 ## 开发流程约定
 
 - 按阶段提交，**每个 commit 只做一件事、信息写详细**（做了什么 + 为什么），与下方「Commit 记录」一一对应。
+- **每次 commit 必须同步更新下方「Commit 记录」**（先改 README 再提交），详细规范见 `AGENTS.md`。
 - human_version 先跑通，再一起讨论 AI_version 的升级点，升级项记录在 DESIGN.md §7。
 
 ## Commit 记录
+
+### 2026-09-08 — 新增 AGENTS.md：固化 Commit 规范与 README 维护规则
+
+**做了什么：**
+1. 新增 `AGENTS.md`：把本仓库的协作契约写成文档 ——
+   - 文档导航与冲突裁决（SPEC 为唯一实现依据，docx 只读参考）；
+   - **硬性规则：每次 commit 必须做两件事**——commit message 写详细（背景/做了什么/如何验证/待确认）+ 同步更新 README「Commit 记录」；
+   - 开发流程约定（讨论先行、human 先跑通、每阶段一 commit）；
+   - 实现时易错规格速查（双空格、同名共存、状态机等）。
+2. README 同步更新：仓库结构加入 AGENTS.md，本条记录为本规则的首次执行。
 
 ### 2026-09-08 — 阅读课程文档，精简为可执行 Spec
 

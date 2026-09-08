@@ -91,6 +91,9 @@ def main() -> int:
             passed += 1
             continue
         print(f"FAIL  {base}")
+        if r.stderr:                                # ASan 等 stderr 信息不再吞掉
+            for ln in r.stderr.splitlines()[:15]:
+                print(f"  [stderr] {ln}")
         for i in range(max(len(got), len(exp))):
             a = got[i] if i < len(got) else "<EOF>"
             b = exp[i] if i < len(exp) else "<EOF>"

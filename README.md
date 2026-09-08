@@ -27,6 +27,12 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — AI-05 健壮性
+
+1. **平台差异坑（macOS vs Linux）**：AddressSanitizer 的 LeakSanitizer 在 macOS 上不支持（一启动就报错退出），Linux 才可用。本地 macOS 只做越界检测，泄漏检测交 CI。跨平台工具要区分环境。
+2. **期望文件生成要按真实遍历顺序**：deep_path 的 ll_pre 期望先写"所有 Dir 再 File"是错的——第 50 层目录 d49 在 d48 的文件之后输出（walk_pre 先文件后子目录）。推导期望时要精确模拟递归顺序，测试失败后对照实际输出校准。
+3. **human_version 不是 ASan 的验收对象**：CI 首次给 human 加 ASan 后，Linux 上 deep_delete 探出隐藏内存问题（macOS 不复现）。按约定 human 冻结不修，ASan 只对 AI_version 跑——两版本就不同成熟度，验收要各按其定位。
+
 ### 2026-09-08 — AI-05 健壮性增强（Issue #5）：ASan 进 CI + 深度路径/泄漏用例 + 性能冒烟
 
 **做了什么：**

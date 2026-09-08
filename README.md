@@ -26,6 +26,24 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — human_version：cmd 层 15 条命令实现并修复，核心链路跑通
+
+**做了什么：**
+1. 新增 `cmd.h`（15 个命令函数声明）与 `cmd.c`（实现）：
+   - 检查-操作-输出三步：create/delete/rename 查表判重，cd 判 ".."；
+   - open/write/close/read 状态机四件套；
+   - find_file 两遍遍历（先统计再输出 SEARCH RESULTS）。
+2. 新增 `fs.h`/`fs.c` 的 `dir_rename`/`file_rename`（只换哈希 key 不碰链表，保持创建顺序）与 `find_walk`（先根遍历+子串匹配）。
+3. 修复 review 发现的 10 个问题（详见踩坑记录 cmd 模块）：
+   - create_dir 用 strcpy 当比较/只建不挂/无输出；delete_dir 语义错位 + use-after-free；
+   - cd 未处理 ".."、处理完未 return；rename_dir 消息 renamed/rename 拼错；rename_file 拆链重挂乱序；
+   - find_walk 的 static 跨文件链接失败；全局变量只有 extern 声明无定义（链接错误）；
+   - find_walk 统计趟误打印（SEARCH RESULTS 顺序反）→ 加 print 开关；ls 的 Dir 双空格；cd 错误消息不带名字。
+4. 验证：三模块零警告；临时测试驱动（建树/open-write-close-read/rename/find/ls/ll_pre/空目录增删）输出与官方样例逐行一致。
+
+**待确认 / 下一步：**
+- 写 main.c（>> 提示、拆命令、状态机拦截、15 条分发），回放 tests/sample_input.txt。
+
 ### 2026-09-08 — human_version：修复 fs.c 全部问题（链表维护/清初始化/路径拼接）并通过测试
 
 **做了什么：**
@@ -81,6 +99,19 @@ ezfilesystem/
 ## 踩坑记录（学习笔记）
 
 > 记录实现过程中踩过的坑与修法，避免重复犯错。每个 commit 涉及的坑同步追加到这里。
+
+### 2026-09-08 — cmd 模块
+
+1. **strcpy 当比较用**：`strcpy(g_cwd->name,name)==0` 恒假（strcpy 返回目标指针）。要判断用什么就用什么：查重用 `dir_find_child`，别拿拷贝函数顶替。
+2. **只建不挂**：`dir_new(name)` 只创建节点，没 `dir_add_child` 挂到父目录——节点直接丢失。创建 = 建节点 + 挂载两步。
+3. **delete_dir 语义错位**：判断「要删的名字 == 当前目录名」不是题目语义；且 `dir_destroy(g_cwd)` 删自己 → g_cwd 悬垂 + 后续 use-after-free。应先 `dir_find_child(g_cwd, name)` 找目标，再「摘链 + 递归销毁」。
+4. **cd 忘处理 ".."**：`cd ..` 会去查叫 ".." 的子目录 → 必然报 not found。
+5. **处理完没 return**：cd 的 ".." 分支切到父目录后继续往下查——加了 return 才挡住。
+6. **static 跨文件不可见**：`find_walk` 声明/定义都加 static，cmd.c 引用时链接失败（undefined reference）。供外部调用的函数不要 static。
+7. **extern 声明 ≠ 定义**：全局变量只在 fs.h 声明，fs.c 忘记定义——-c 编译不报，链接才暴露（undefined symbol）。记得 fs.c 里 `Directory *g_root = NULL;` 等。
+8. **统计时顺手打印**：find_walk 第一遍遍历统计 found 时也 printf，导致 SEARCH RESULTS 行出现路径之后。修法：遍历函数加 print 开关，第一遍只计数。
+9. **消息拼写**：`SUCCESS: rename dir` 应为 `renamed dir`；`Dir ` 单空格应为 `Dir  ` 双空格。
+10. **错误消息带不带名字**：cd/delete 的 `dir not found`/`file not found` 固定不带名字；rename/find/open/read 的 `not found` 带名字。
 
 ### 2026-09-08 — fs 模块
 

@@ -32,14 +32,17 @@ Directory *dir_find_child(Directory *d, const char *name);
 void dir_add_child(Directory *d, Directory *child);       //新建子目录           
 void dir_remove_child(Directory *d, Directory *child);    //删除子目录  
 void dir_destroy(Directory *d);                           //删除整个目录
+ void dir_rename(Directory *d, Directory *c, const char *newname);
                                                                                                     
     /* 文件操作 */                                                                                  
 File *file_new(const char *name);//新建文件                                                               
 File *file_find(Directory *d, const char *name); //查找文件                                               
 void file_add(Directory *d, File *f);//添加文件                                                          
-void file_remove(Directory *d, File *f);//移除文件                                                       
+void file_remove(Directory *d, File *f);//移除文件  
+ void file_rename(Directory *d, File *f, const char *newname); 
                                                                                                     
-    /* 遍历（find_file / ll_pre / ll_post 共用） */                                                 
+    /* 遍历（find_file / ll_pre / ll_post 共用） */ 
+void find_walk(Directory *cur, char *path, int len, const char *kw, int *found, int print);    
 void walk_pre (Directory *cur, char *path, int len);   //先根遍历                              
 void walk_post(Directory *cur, char *path, int len);   //后根遍历    
 #endif

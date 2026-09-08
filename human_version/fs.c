@@ -6,6 +6,12 @@
 
 #define PATH_BUF_SIZE 256   /* 路径缓冲大小：NAME_SIZE=20，层级有限，256 足够 */
 
+/* 全局状态定义（fs.h 中 extern 声明，此处定义才真正分配内存） */
+Directory *g_root      = NULL;
+Directory *g_cwd       = NULL;
+int        g_is_open   = 0;
+File      *g_opend_file = NULL;
+
 /* ============ 目录操作 ============ */
 
 Directory *dir_new(const char *name){
@@ -63,6 +69,13 @@ void dir_destroy(Directory *d){
     hash_destroy(d->files);
     free(d);
 }
+
+void dir_rename(Directory *d, Directory *c, const char *newname) {              
+      hash_delete(d->subdirs, c->name);                                           
+      strncpy(c->name, newname, NAME_SIZE - 1);                                   
+      c->name[NAME_SIZE - 1] = '\0';                                              
+      hash_insert(d->subdirs, c->name, c);                                        
+  }                             
 
 /* ============ 文件操作 ============ */
 
@@ -125,5 +138,28 @@ void walk_post(Directory *cur, char *path, int len) {
         path[len2 - 1] = '\0';
         printf("Dir  %s\n", path);
         path[len] = '\0';                               /* 还原 */
+    }
+}
+
+void file_rename(Directory *d, File *f, const char *newname) {                  
+       hash_delete(d->files, f->name);      /* ① 用旧名删掉哈希 key */             
+       strncpy(f->name, newname, NAME_SIZE - 1);   /* ② 改名字 */                  
+       f->name[NAME_SIZE - 1] = '\0';                                              
+       hash_insert(d->files, f->name, f);   /* ③ 用新名插入 key */                 
+       /* 链表完全没碰，位置保持 ✓ */                                              
+   }             
+
+  void find_walk(Directory *cur, char *path, int len, const char *kw, int *found, int print) {
+    for (File *f = cur->firstchild_file; f; f = f->nextbro_file) {
+        if (strstr(f->name, kw) != NULL) {          /* human 版 strstr 顶替 KMP */
+            (*found)++;
+            if (print) printf("%s%s\n", path, f->name);   /* 只有输出趟才打路径 */
+        }
+    }
+    for (Directory *c = cur->firstchild_dir; c; c = c->nextbro_dir) {
+        int len2 = len + strlen(c->name) + 1;
+        snprintf(path + len, 256 - len, "%s/", c->name);
+        find_walk(c, path, len2, kw, found, print);
+        path[len] = '\0';                         /* 还原 */
     }
 }

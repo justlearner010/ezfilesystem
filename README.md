@@ -27,6 +27,19 @@ ezfilesystem/
 
 ## Commit 记录
 
+### 2026-09-08 — AI-01 KMP：独立 kmp 模块替换 strstr（nextval 优化），20 万随机用例验证一致
+
+**做了什么：**
+1. 新增 `AI_version/kmp.h` / `kmp.c`（Issue #1，与用户确认 3 点：独立模块 / nextval 优化 / 空模式匹配一切）：
+   - `kmp_nextval`：0-based nextval 数组（跳过与失配字符相同的自移动），KMP_MAX_PAT 与 fs.h NAME_SIZE 同步；
+   - `kmp_match`：包含语义子串匹配；空模式返回 1；模式串长于文件名上限直接返回 0（next 数组固定大小不越界）；
+   - 修复实现越界隐患：++i 后 i==m 时不再访问 pat[m]（AI 版内存安全自查）。
+2. `fs.c` 的 find_walk 改用 `kmp_match`；Makefile OBJS 加 kmp.o。
+3. 验证：AI_version 9 用例全绿；20 万组随机 (text,pat) 与 strstr 结果完全一致；ASan 官方样例无报错。
+
+**待确认 / 下一步：**
+- Issue #2 内存安全（write 越界截断策略、递归删除深度）；补充：命令行空关键词依赖 Issue #3 输入安全。
+
 ### 2026-09-08 — AI_version 基线建立：Issue 驱动模式启动（AGENTS.md + 双版本测试）
 
 **做了什么：**
@@ -144,6 +157,11 @@ ezfilesystem/
 1. **期望文件要覆盖程序全生命周期**：写 `.out` 时漏了创建命令前面的 SUCCESS 行，只写了 find/traversal 目标段——期望文件必须包含从启动到结束的**完整**输出序列（含所有中间 SUCCESS），否则 diff 第 0 行就错位。
 2. **归一化要去掉连续提示符**：cd 无输出时可能出现 `>> >> SUCCESS...`，处理 `>> ` 前缀要循环剥除；EOF 前会多一个空 `>> `，要过滤空行。
 3. **.gitignore 会吞掉期望文件**：`*.out` 同时匹配编译产物与测试期望文件，导致期望文件没被 `git add` 提交（CI 会全挂）。修法：期望文件改用 `.expected` 后缀，与编译产物 `.out` 区分。
+
+### 2026-09-08 — AI-01 KMP 模块
+
+1. **nextval 计算的越界隐患**：`++i` 后 `i == m` 时若再比较 `pat[i]`（即 `pat[m]`）越界一字节。修法：`if (i < m && pat[i] == pat[j])`。规范化实现才能保证安全。
+2. **命令行空关键词 ≠ 函数空模式**：`find_file ""` 的 `""` 会被 strtok 当字面 token（两个引号字符）传给 kw；真正的空关键词要靠"无参数命令"，属 Issue #3 输入安全范围。
 
 ### 2026-09-08 — cmd 模块
 

@@ -1,6 +1,6 @@
 CC      = gcc
 CFLAGS  = -Wall -g
-OBJS    = hash.o fs.o cmd.o main.o
+OBJS    = hash.o fs.o cmd.o kmp.o main.o
 
 ezfs: $(OBJS)
 	$(CC) -o $@ $(OBJS)

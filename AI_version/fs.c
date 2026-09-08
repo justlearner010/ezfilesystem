@@ -1,5 +1,6 @@
 #include "fs.h"
 #include "hash.h"
+#include "kmp.h"   /* AI 版：KMP 子串匹配替代 strstr */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -151,7 +152,7 @@ void file_rename(Directory *d, File *f, const char *newname) {
 
   void find_walk(Directory *cur, char *path, int len, const char *kw, int *found, int print) {
     for (File *f = cur->firstchild_file; f; f = f->nextbro_file) {
-        if (strstr(f->name, kw) != NULL) {          /* human 版 strstr 顶替 KMP */
+        if (kmp_match(f->name, kw)) {              /* KMP 子串匹配（替代 strstr） */
             (*found)++;
             if (print) printf("%s%s\n", path, f->name);   /* 只有输出趟才打路径 */
         }

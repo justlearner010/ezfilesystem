@@ -1,7 +1,13 @@
 #include "cmd.h"
 #include "fs.h"
+
 #include <stdio.h>
 #include <string.h>
+
+/* 命令主循环：读一行 → 拆词 → 状态机拦截 → 分发
+ *
+ * human 版特点：定长缓冲、不做缺参 / 引号校验、未知命令静默忽略（AI 版在这些点上增强）。
+ */
 
 int main(void) {
     g_root = dir_new("root");
@@ -10,24 +16,26 @@ int main(void) {
     char line[256];
     while (1) {
         printf(">> ");                                  /* 每次读取命令前 */
-        if (!fgets(line, sizeof line, stdin)) break;    /* EOF 退出 */
+        if (fgets(line, sizeof line, stdin) == NULL)    /* EOF 退出 */
+            break;
         line[strcspn(line, "\n")] = '\0';               /* 去换行 */
 
         char *cmd = strtok(line, " ");
-        if (!cmd) continue;                             /* 空行忽略 */
+        if (cmd == NULL)
+            continue;                                   /* 空行忽略 */
 
-        /* open 状态机拦截：已打开时，非 write_file/close_file 一律拒绝 */
+        /* open 状态机拦截：已打开时，非 write_file / close_file 一律拒绝 */
         if (g_is_open && strcmp(cmd, "write_file") != 0 && strcmp(cmd, "close_file") != 0) {
             printf("ERROR: invalid operation\n");
             continue;
         }
 
-        /* write_file 特殊：内容被引号包裹、可含空格，单独解析 */
+        /* write_file 特殊：内容被双引号包裹、可含空格，单独解析 */
         if (strcmp(cmd, "write_file") == 0) {
             char *content = strtok(NULL, "\"");         /* 跳过左引号，取引号内内容 */
             if (!g_is_open)
                 printf("ERROR: invalid operation\n");
-            else if (content)
+            else if (content != NULL)
                 cmd_write_file(content);
             continue;
         }

@@ -7,16 +7,63 @@
 
 ```
 ezfilesystem/
-├── 简单的文件系统-题目描述.docx       老师原始文档（题目描述）
-├── 简单的文件系统-实验指导用书 .docx   老师原始文档（数据结构/算法参考）
+├── docx/                              老师原始文档（题目描述 + 实验指导用书，只读参考）
 ├── SPEC.md                           精简版实现规格（★ 建议最先读，含结构图与细节标注）
 ├── DESIGN.md                         模块划分与函数接口设计（实现时的接口约定）
 ├── AGENTS.md                         本仓库工作规范（Commit 规范 / README 维护 / 文档导航 / AI_version 开发模式）
 ├── README.md                         本文件
-├── tests/                            官方样例 + 9 组用例 + 测试运行器（run_tests.py [版本目录]）
-├── .github/workflows/ci.yml          CI：human_version 与 AI_version 双版本回归
+├── tests/                            官方样例 + 公共用例 cases/ + AI 专属用例 cases_ai/ + 测试运行器 run_tests.py
+├── .github/workflows/ci.yml          CI：human_version 与 AI_version 双版本回归（AI 版额外跑 ASan）
+├── run.sh / run.command / run.bat    ★ 一键运行（Linux·macOS 终端 / macOS 双击 / Windows 双击）
+│
 ├── human_version/                    我自己实现的简化版（跑通 SPEC，strstr 替代 KMP，不查越界）
-└── AI_version/                       升级版（基线=human 副本；按 Issue #1-5 逐项增强，冻结 human）
+│   ├── include/                      头文件：hash.h（哈希表）/ fs.h（目录树）/ cmd.h（命令）
+│   ├── src/                          实现：hash.c / fs.c / cmd.c / main.c
+│   └── Makefile                      构建（产物 ezfs 落在本目录）
+└── AI_version/                       升级版（基线=human 副本；按 Issue #1-5 逐项增强）
+    ├── include/                      头文件：hash.h / fs.h / cmd.h / kmp.h（KMP 子串匹配）
+    ├── src/                          实现：hash.c / fs.c / cmd.c / kmp.c / main.c
+    └── Makefile                      构建（产物 ezfs 落在本目录）
+```
+
+### 源码位置速查
+
+两个版本目录结构完全对应，差异只在同名文件内部（AI 版增强点见 `DESIGN.md §7`）：
+
+| 想找什么 | 文件 | 两版差异 |
+|---|---|---|
+| 哈希表（链地址法） | `include/hash.h`、`src/hash.c` | 基本一致（AI 版去掉无用的 `CONTENT_SIZE`） |
+| 目录树 / 文件实体（孩子-兄弟 + 两张哈希表） | `include/fs.h`、`src/fs.c` | AI 版 content 动态扩容、路径缓冲 1024、退出释放整棵树 |
+| 15 条命令的业务实现 | `include/cmd.h`、`src/cmd.c` | AI 版加了名字超长校验、`close_file` 空指针保护、内容动态扩容 |
+| 主循环 / 拆词 / 状态机拦截 / 命令分发 | `src/main.c` | human 版定长 `fgets`；AI 版 `getline` + 缺参校验 + 引号校验 |
+| 模糊查找算法 | `src/fs.c` 的 `find_walk`（`strstr`） | AI 版换成 `include/kmp.h` + `src/kmp.c`（KMP `nextval`） |
+| 编译配置 / 头文件依赖 | `Makefile` | 除源码清单（AI 多 `kmp.c`）外一致 |
+
+## 一键运行（给老师 / 快速体验）
+
+不想敲命令的话，直接运行下面的入口脚本，会给出菜单选择版本与运行方式（编译全自动）：
+
+| 系统 | 怎么运行 |
+|---|---|
+| **macOS** | 双击 `run.command`（若弹出"无法打开"，右键 → 打开 → 仍然打开） |
+| **Windows** | 双击 `run.bat`（需先装 [MinGW-w64](https://www.mingw-w64.org/) 并勾选加入 PATH） |
+| **Linux / macOS 终端** | `./run.sh` |
+
+菜单可选：
+
+1. 选版本：`human 版` / `AI 版` / `对比两版输出`
+2. 选方式：
+   - **回放官方样例**（推荐）—— 输出与报告第 4 节截图一致
+   - **交互式体验** —— 手动输入命令，Ctrl+D 退出
+   - **运行全部测试用例** —— 自动比对期望输出（human 9 组 / AI 17 组）
+
+只装了编译器也能跑：脚本优先用 `make`，没有 `make` 时退回直接 `gcc -Wall -g -o ezfs *.c`。
+
+等价的手动命令（供参考）：
+
+```bash
+make -C human_version run          # 编译并回放官方样例（AI 版同理）
+python3 tests/run_tests.py AI_version   # 跑全部用例，退出码 0=全过
 ```
 
 ## 开发流程约定
@@ -26,6 +73,27 @@ ezfilesystem/
 - human_version 先跑通，再一起讨论 AI_version 的升级点，升级项记录在 DESIGN.md §7。
 
 ## Commit 记录
+
+### 2026-09-10 — 代码整理 + 源码分目录 include/src（行为零变化，CI 全绿）
+
+**做了什么：**
+1. **代码整理**（两版，纯格式与等价替换）：统一缩进/花括号/注释风格与声明对齐，清掉行尾空白；修掉 `cmd_create_dir`、`dir_rename`、`file_rename`、`find_walk` 的整段错位缩进与 `cmd_find_file` 挤成一行的语句；无参函数 `()` → `(void)`；human 版硬编码的 `256` 统一成 `PATH_BUF_SIZE`；`malloc`+`memset` → `calloc`；AI 版删掉已无用的 `CONTENT_SIZE`；删 `human_version/.gitkeep`。
+2. **源码分目录**（`git mv` 保留历史）：两版统一为 `include/*.h` + `src/*.c`，编译配置、测试运行器、一键运行脚本全部同步到新路径。
+3. **构建增强**：两个 Makefile 改用 `wildcard src/*.c`、加 `-Iinclude`、加 `-MMD -MP` 头文件依赖（改 `.h` 会触发重编译）、加 `-std=c11 -Wall -Wextra`。
+4. **测试运行器**：`tests/run_tests.py` 的 `--asan` 路径适配新布局；`make` 不可用时自动回退直接 `gcc`，Windows（MinGW 无 `make`）也能跑用例。
+5. **一键运行脚本首次入库**（上一轮遗留）：`run.sh` / `run.bat` / `run.command`，含双版本编译、回放官方样例、交互式、跑全部用例、对比两版输出。
+6. **README**：重写仓库结构树（补上早已迁移的 `docx/`），新增「源码位置速查」表。
+
+**如何验证：**
+- `run_tests.py human_version` 9/9 PASS；`AI_version` 17/17 PASS；`--asan AI_version` 17/17 PASS（无越界/泄漏）。
+- **行为零变化**：整理前后各把 34 份用例输入喂给新旧二进制，stdout 逐字节 diff 完全一致。
+- `-Wall -Wextra -std=c11` 下零告警；`make` 与「无 make 回退 gcc」两条编译路径均实测通过。
+- `run.sh` 四条菜单路径手测：human 回放样例 / AI 跑全部用例 / 交互模式 / 对比两版输出。
+
+**待确认 / 下一步：**
+- human_version 按 `AGENTS.md §5` 属冻结版本，本次只做格式与等价替换、**未改任何行为**；两版差异仍等于 AI 版增强能力（KMP / 内存安全 / 输入安全 / 未定义行为 / 健壮性）。
+- `REPORT-SUMMARY.md` 与 `docx/202532110113-*.docx(.bak)` 按约定不动，保持未跟踪。
+- 尚未 push。
 
 ### 2026-09-08 — AI-05 健壮性
 

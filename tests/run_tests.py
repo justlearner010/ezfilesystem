@@ -5,9 +5,10 @@
     python3 tests/run_tests.py [版本目录]
 
 版本目录：默认 human_version，可传 AI_version（支持两个版本共享同一套用例回归）。
+源码布局：<版本目录>/src/*.c + <版本目录>/include/*.h，产物 <版本目录>/ezfs。
 流程：
-1. make 编译目标版本（要求 gcc + make）
-2. 遍历 tests/cases/*.in，喂给 ./ezfs
+1. 编译目标版本（优先 make，无 make 时回退直接 gcc；加 --asan 则强制 gcc + AddressSanitizer）
+2. 遍历 tests/cases/*.in（AI_version 额外跑 tests/cases_ai/），喂给 ./ezfs
 3. 归一化程序输出（去 ">> " 提示符前缀、去空行/尾随提示符），
    与同名 .expected 期望文件逐行对比
 退出码：全过 0，有失败 1（供 CI 使用）
@@ -35,19 +36,42 @@ if TARGET == "AI_version":
         CASE_DIRS.append(ai_dir)
 
 
+def gcc_cmd(sanitize: bool) -> list:
+    """直接调 gcc 编译（无 make 时的回退路径）。
+
+    源码布局：<版本目录>/src/*.c + <版本目录>/include/*.h
+    产物：<版本目录>/ezfs
+    """
+    src_dir = os.path.join(EZFS_DIR, "src")
+    inc_dir = os.path.join(EZFS_DIR, "include")
+    srcs = [os.path.join(src_dir, f) for f in sorted(os.listdir(src_dir)) if f.endswith(".c")]
+    cmd = ["gcc", "-Wall", "-Wextra", "-std=c11", "-g"]
+    if sanitize:
+        cmd.append("-fsanitize=address")
+    return cmd + ["-I", inc_dir, "-o", EZFS] + srcs
+
+
 def build() -> bool:
+    """编译目标版本。优先 make（带头文件依赖）；make 不可用时回退直接 gcc。"""
     if ASAN:
-        srcs = [os.path.join(EZFS_DIR, f) for f in sorted(os.listdir(EZFS_DIR)) if f.endswith(".c")]
-        cmd = (["gcc", "-Wall", "-Wextra", "-std=c11", "-fsanitize=address", "-g",
-                "-I", EZFS_DIR, "-o", EZFS] + srcs)
+        attempts = [gcc_cmd(True)]
     else:
-        cmd = ["make", "-C", EZFS_DIR]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
-        print("编译失败：", file=sys.stderr)
-        print(r.stdout + r.stderr, file=sys.stderr)
-        return False
-    return True
+        attempts = [["make", "-C", EZFS_DIR], gcc_cmd(False)]
+
+    last_err = ""
+    for cmd in attempts:
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True)
+        except FileNotFoundError:            # make / gcc 不在 PATH
+            last_err = f"命令不存在：{cmd[0]}"
+            continue
+        if r.returncode == 0:
+            return True
+        last_err = r.stdout + r.stderr      # 真正编译失败：留着最后报出来
+
+    print("编译失败：", file=sys.stderr)
+    print(last_err, file=sys.stderr)
+    return False
 
 
 def normalize(out: str) -> list:

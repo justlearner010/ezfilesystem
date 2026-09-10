@@ -4,3 +4,4 @@ ezfs
 *.dSYM/
 build/
 .DS_Store
+*.d

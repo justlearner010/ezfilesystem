@@ -1,11 +1,49 @@
-#define _POSIX_C_SOURCE 200809L   /* getline 需要 POSIX 支持 */
-
 #include "cmd.h"
 #include "fs.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* ==================== 整行读取（不依赖 POSIX getline） ==================== */
+
+/* 读一整行到 *buf（按需扩容，行多长都读得下），行尾的 '\n' 不入缓冲。
+ * 返回行长；到达 EOF 且一个字符都没读到时返回 -1。
+ *
+ * 为什么不用 POSIX 的 getline：MSVC 与 Dev-C++ 自带的 MinGW.org 都没有它，
+ * 而那正是 Windows 上最常见的两个 C 环境；自实现一份就能到处编译。
+ */
+static long read_line(char **buf, size_t *cap, FILE *fp) {
+    size_t len = 0;
+    int    c;
+
+    if (*buf == NULL || *cap == 0) {
+        *cap = 128;
+        *buf = malloc(*cap);
+        if (*buf == NULL)
+            return -1;
+    }
+
+    while ((c = fgetc(fp)) != EOF) {
+        if (c == '\n')
+            break;                          /* 行尾：换行符本身不存 */
+        if (len + 1 >= *cap) {              /* +1 给结尾 '\0' 留位置 */
+            size_t ncap = *cap * 2;
+            char  *nb   = realloc(*buf, ncap);
+            if (nb == NULL)
+                return -1;
+            *buf = nb;
+            *cap = ncap;
+        }
+        (*buf)[len++] = (char)c;
+    }
+
+    if (c == EOF && len == 0)
+        return -1;                          /* 无数据即 EOF */
+
+    (*buf)[len] = '\0';
+    return (long)len;
+}
 
 /* ==================== 入参解析表 ==================== */
 
@@ -32,7 +70,7 @@ static int need_args(const char *cmd) {
 /* 命令主循环：读一行 → 拆词 → 状态机拦截 → 缺参校验 → 分发
  *
  * AI 版相对 human 版的增强（Issue #3 输入安全）：
- *   Q1 决策 B：getline 动态读取，超长行不截断
+ *   Q1 决策 B：整行动态读取，超长行不截断
  *   Q2 决策 A：缺必需参数统一报 invalid operation
  *   Q3 决策 A：write_file 必须带成对引号
  *   Q4 决策 A：多余参数忽略
@@ -47,10 +85,10 @@ int main(void) {
 
     while (1) {
         printf(">> ");
-        ssize_t n = getline(&line, &cap, stdin);
+        long n = read_line(&line, &cap, stdin);     /* 动态读取：超长行不截断 */
         if (n == -1)
             break;                                 /* EOF 退出 */
-        line[strcspn(line, "\n")] = '\0';          /* 去换行 */
+                                                   /* 行尾 '\n' 已在 read_line 里去掉 */
 
         /* 在拆词前定位引号（strtok 会破坏 line，引号解析必须提前） */
         char *q1 = strchr(line, '"');

@@ -46,7 +46,7 @@ ezfilesystem/
 | 系统 | 怎么运行 |
 |---|---|
 | **macOS** | 双击 `run.command`（若弹出"无法打开"，右键 → 打开 → 仍然打开） |
-| **Windows** | 双击 `run.bat`（需先装 [MinGW-w64](https://www.mingw-w64.org/) 并勾选加入 PATH） |
+| **Windows** | 双击 `run.bat`（**不需要预先配 PATH**，脚本自己找编译器，详见下方） |
 | **Linux / macOS 终端** | `./run.sh` |
 
 菜单可选：
@@ -54,16 +54,49 @@ ezfilesystem/
 1. 选版本：`human 版` / `AI 版` / `对比两版输出`
 2. 选方式：
    - **回放官方样例**（推荐）—— 输出与报告第 4 节截图一致
-   - **交互式体验** —— 手动输入命令，Ctrl+D 退出
+   - **交互式体验** —— 手动输入命令，Ctrl+D / Ctrl+Z 退出
    - **运行全部测试用例** —— 自动比对期望输出（human 9 组 / AI 17 组）
 
-只装了编译器也能跑：脚本优先用 `make`，没有 `make` 时退回直接 `gcc -Wall -g -o ezfs *.c`。
+### Windows 上编译器怎么找（给老师）
+
+Windows 下只用双击 `run.bat`，**不用先把编译器加进 PATH**。脚本会依次尝试：
+
+1. 系统 PATH 里的 `gcc` / `clang`
+2. 常见安装目录（Dev-C++、CodeBlocks、MSYS2、MinGW-w64、TDM-GCC、w64devkit、scoop/choco 等）——找到就临时加进 PATH，**不改系统设置**
+3. Visual Studio 自带的 `cl.exe`（通过 `vswhere` 定位并自动调 `vcvars64.bat`）
+
+三条都不中的话，脚本会停住并列出三种安装方式（Dev-C++ 最省事 / MSYS2 / MinGW-w64），**不会一闪而过**。
+
+如果老师电脑上什么都没装、也不想装，可以把下面两条命令发给他，或直接看报告里的运行截图：
+
+```bat
+:: 在 human_version 目录下执行
+gcc -std=c11 -Wall -Iinclude -o ezfs.exe src\hash.c src\fs.c src\cmd.c src\main.c
+
+:: 在 AI_version 目录下执行（注意多一个 kmp.c）
+gcc -std=c11 -Wall -Iinclude -o ezfs.exe src\hash.c src\fs.c src\cmd.c src\kmp.c src\main.c
+```
+
+> 两个版本都**不依赖任何 POSIX 专有接口**（AI 版的整行读取是自实现的，没用 `getline`），
+> 所以 MinGW-w64 / Dev-C++ 自带的 MinGW.org / Visual Studio 的 cl 都能编译。
+
+### 没装 make 也能跑
+
+入口脚本优先用 `make`；没有 `make` 时自动退回直接调编译器：
+
+```bash
+./run.sh                    # 脚本内部自动处理
+gcc -std=c11 -Wall -Wextra -g -Iinclude -o ezfs src/*.c   # 手动等价命令
+```
+
+测试运行器同理：`python3 tests/run_tests.py <版本目录>` 会先试 `make`，失败就直接调 `gcc`。
 
 等价的手动命令（供参考）：
 
 ```bash
 make -C human_version run          # 编译并回放官方样例（AI 版同理）
 python3 tests/run_tests.py AI_version   # 跑全部用例，退出码 0=全过
+python3 tests/run_tests.py --asan AI_version   # ASan 越界 + 泄漏检测
 ```
 
 ## 开发流程约定
@@ -73,6 +106,37 @@ python3 tests/run_tests.py AI_version   # 跑全部用例，退出码 0=全过
 - human_version 先跑通，再一起讨论 AI_version 的升级点，升级项记录在 DESIGN.md §7。
 
 ## Commit 记录
+
+### 2026-09-10 — Windows 一键运行加固（run.bat 自动找编译器 + 去掉 POSIX 依赖）
+
+**做了什么：**
+1. `AI_version/src/main.c`：自实现 `read_line`（动态扩容整行读取）替掉 POSIX 的 `getline`/`ssize_t`。
+   原因：MSVC 与 Dev-C++ 自带的 MinGW.org 都没有 `getline`，而那正是 Windows 上最常见的两个 C 环境。
+   行为完全等价：超长行不截断、末尾无换行的行、空行、EOF 语义全部保持一致。
+2. `run.bat` 重写：不再要求用户自己配 PATH。
+   - 依次探测：PATH 里的 `gcc`/`clang` → Dev-C++ / CodeBlocks / MSYS2 / MinGW-w64 / TDM-GCC /
+     w64devkit / scoop / choco 的常见安装目录（找到就临时 prepend PATH，**不改系统设置**）
+     → `vswhere` 定位 Visual Studio 的 `cl.exe` 并自动调 `vcvars64.bat`。
+   - 加 `chcp 65001`，中文菜单不再乱码。
+   - 三条都找不到时：停住并列出三种安装方式（Dev-C++ / MSYS2 / MinGW-w64）与手工编译命令，不再一闪而过。
+   - 编译失败时保留窗口并打印编译器原始报错，方便反馈。
+   - MSVC 路径用 `cl /nologo /D_CRT_SECURE_NO_WARNINGS /Iinclude /Fe:ezfs.exe`，与 gcc 路径并存。
+3. `.gitignore` 补 `*.exe` / `*.obj`（Windows 双击脚本会生成这两个）。
+4. README「一键运行」章节补充 Windows 编译器查找说明与手写编译命令。
+
+**如何验证：**
+- `read_line` 替换后：AI 版 17 份用例输出与替换前**逐字节一致**；公共 9 组 + AI 17 组 + ASan 全绿。
+- 专项边界用例：5000 字符超长行被拒（`name too long`）、3000 字符写入并回读完整、
+  末尾无换行的命令仍执行、空行忽略、EOF 干净退出。
+- 两版在 `-std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wvla` 下零告警；
+  确认无 POSIX 接口 / 无 GCC 扩展 / 无变长数组 —— 即 MSVC 与 MinGW.org 也能编译。
+- `run.bat` 静态检查：11 个 `goto`/`call` 目标全部存在，括号全程平衡。
+- macOS 侧 `run.sh` / `run.command` 四条菜单路径复测通过。
+
+**待确认 / 下一步：**
+- `run.bat` 无法在 macOS 上真机跑，编译器探测与 cl 分支属「静态审查 + 保守写法」，
+  待 Windows 上实测确认；若老师机器路径特殊，把报错发回来即可再放宽探测范围。
+- 老师机器若什么编译器都没有也不方便装，最稳的是答辩现场用 `./run.sh`，或直接用报告里的运行截图。
 
 ### 2026-09-10 — 代码整理 + 源码分目录 include/src（行为零变化，CI 全绿）
 

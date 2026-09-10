@@ -1,7 +1,14 @@
+# 编译产物（macOS / Linux）
 *.o
-*.out
+*.d
 ezfs
 *.dSYM/
+
+# 编译产物（Windows：run.bat 用 gcc 或 MSVC cl 生成的）
+*.exe
+*.obj
+
+# 其他
+*.out
 build/
 .DS_Store
-*.d
